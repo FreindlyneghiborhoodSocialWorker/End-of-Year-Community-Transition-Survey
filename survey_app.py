@@ -1,21 +1,20 @@
 import streamlit as st
 from datetime import datetime
-
-# Google Sheets imports
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
+import qrcode
+import io
 
-# Authorize and open sheet
-scope = [
-    "https://spreadsheets.google.com/feeds",
+# --- GOOGLE SHEETS SETUP ---
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive"
 ]
-creds = ServiceAccountCredentials.from_json_keyfile_name("gs_creds.json", scope)
-gc = gspread.authorize(creds)
-sh = gc.open("End-of-Year Community Transition Survey")  # exact name of your Google Sheet
-worksheet = sh.sheet1  # first tab
+creds = Credentials.from_service_account_file("gs_creds.json", scopes=SCOPES)
+client = gspread.authorize(creds)
+sheet = client.open("End-of-Year Community Transition Survey").sheet1  # Use your actual Sheet name
 
-# --- Streamlit UI ---
+# --- STREAMLIT UI ---
 st.title("End-of-Year Community Transition Survey")
 st.write("Thank you for taking a few minutes to provide feedback on our services this year.")
 
@@ -39,33 +38,30 @@ good = st.text_area("What went well this past year? Share any successes.")
 improve = st.text_area("Where can I improve? (e.g., IEP support, family connections)")
 rating = st.slider("Overall satisfaction (1 = low, 5 = high)", 1, 5, 3)
 
+# --- FUNCTION TO SAVE TO GOOGLE SHEET ---
 def save_to_sheet(row):
-    """Append a single row to Google Sheets."""
-    worksheet.append_row(row)
+    sheet.append_row(row)
 
+# --- FORM SUBMISSION ---
 if st.button("Submit Feedback"):
-    ts = datetime.now().isoformat()
-    serv = "; ".join(services)
-    row = [ts, teacher_name, school_district, serv, good, improve, rating]
+    timestamp = datetime.now().isoformat()
+    service_str = "; ".join(services)
+    row = [timestamp, teacher_name, school_district, service_str, good, improve, rating]
     save_to_sheet(row)
     st.success("✅ Thank you for your feedback!")
 
-# --- QR Code Generation ---
-import qrcode
-import io
+# --- QR CODE GENERATION ---
+st.markdown("---")
+st.subheader("Want to share this survey?")
 
-# Replace this with your real Streamlit app link
-qr_url = "https://your-username-streamlit-survey.streamlit.app"
+# 🔁 Replace this URL with the actual link to your Streamlit survey app:
+survey_url = "https://your-username-your-app-name.streamlit.app"
 
-# Create the QR code
-qr = qrcode.make(qr_url)
-
-# Convert to bytes
+# Create QR code
+qr = qrcode.make(survey_url)
 buf = io.BytesIO()
 qr.save(buf, format="PNG")
 buf.seek(0)
 
-# Display the QR code in Streamlit
-st.markdown("---")
-st.subheader("Want to share this survey?")
 st.image(buf, caption="Scan to open the survey", use_container_width=True)
+
