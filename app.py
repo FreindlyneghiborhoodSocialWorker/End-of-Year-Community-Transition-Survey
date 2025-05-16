@@ -2,14 +2,17 @@ import streamlit as st
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
+import json
 
-# Google Sheets setup
+# Use credentials from Streamlit secrets
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+creds_dict = st.secrets["gcp_service_account"]
+creds_json = json.dumps(creds_dict)
+creds = ServiceAccountCredentials.from_json_keyfile_dict(json.loads(creds_json), scope)
 client = gspread.authorize(creds)
 
 # Open your exact Google Sheet
-sheet = client.open("End-of-Year Community Transition Survey").sheet1  # Make sure this name matches your Google Sheet
+sheet = client.open("End-of-Year Community Transition Survey").sheet1  # Make sure this name matches your actual Google Sheet name
 
 # Streamlit app layout
 st.title("End-of-Year Community Transition Survey")
